@@ -24,7 +24,7 @@ const rest = new REST().setToken(process.env.TOKEN);
     console.log('🔄 Slash Commands werden geladen...');
 
     await rest.put(
-      Routes.applicationCommands('DEINE_CLIENT_ID'),
+      Routes.applicationCommands(1503533932904448171),
       { body: commands },
     );
 
