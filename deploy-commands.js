@@ -1,36 +1,55 @@
-const { REST, Routes } = require('discord.js');
-const fs = require('node:fs');
-const path = require('node:path');
+require('dotenv').config();
+
+const {
+    REST,
+    Routes
+} = require('discord.js');
+
+const fs = require('fs');
 
 const commands = [];
 
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file =>
-  file.endsWith('.js')
-);
+const folders =
+    fs.readdirSync('./commands');
 
-for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file);
-  const command = require(filePath);
+for (const folder of folders) {
 
-  commands.push(command.data.toJSON());
+    const files =
+        fs.readdirSync(`./commands/${folder}`)
+        .filter(file => file.endsWith('.js'));
+
+    for (const file of files) {
+
+        const command =
+            require(`./commands/${folder}/${file}`);
+
+        commands.push(command.data.toJSON());
+    }
 }
 
-const rest = new REST().setToken(process.env.TOKEN);
+const rest = new REST({
+    version: '10'
+}).setToken(process.env.TOKEN);
 
 (async () => {
-  try {
 
-    console.log('🔄 Slash Commands werden geladen...');
+    try {
 
-    await rest.put(
-      Routes.applicationCommands(1503533932904448171),
-      { body: commands },
-    );
+        console.log('Slash Commands werden geladen...');
 
-    console.log('✅ Slash Commands geladen');
+        await rest.put(
+            Routes.applicationCommands(
+                process.env.CLIENT_ID
+            ),
+            {
+                body: commands
+            }
+        );
 
-  } catch (error) {
-    console.error(error);
-  }
+        console.log('✅ Slash Commands geladen');
+
+    } catch (error) {
+
+        console.error(error);
+    }
 })();
