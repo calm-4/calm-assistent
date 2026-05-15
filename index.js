@@ -266,3 +266,111 @@ client.on("messageCreate", async (message) => {
 });
 
 client.login(process.env.TOKEN);
+// TICKET SYSTEM
+
+let ticketCategory = null;
+
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+  if (!message.content.startsWith(prefix)) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  // SET CATEGORY
+  if (command === "ticket" && args[0] === "setcategory") {
+
+    if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+      return message.reply("❌ Keine Rechte");
+    }
+
+    const categoryId = args[1];
+
+    if (!categoryId) {
+      return message.reply("❌ Kategorie ID angeben");
+    }
+
+    ticketCategory = categoryId;
+
+    return message.reply(`✅ Ticket Kategorie gesetzt:\n${categoryId}`);
+  }
+
+  // CREATE TICKET
+  if (command === "ticket" && args[0] === "setup") {
+
+    const existing = message.guild.channels.cache.find(
+      c => c.name === `ticket-${message.author.username.toLowerCase()}`
+    );
+
+    if (existing) {
+      return message.reply("❌ Du hast bereits ein Ticket");
+    }
+
+    const channel = await message.guild.channels.create({
+      name: `ticket-${message.author.username}`,
+      type: 0,
+      parent: ticketCategory || null,
+      permissionOverwrites: [
+        {
+          id: message.guild.id,
+          deny: ["ViewChannel"]
+        },
+        {
+          id: message.author.id,
+          allow: ["ViewChannel", "SendMessages"]
+        }
+      ]
+    });
+
+    channel.send(
+      `🎫 Willkommen ${message.author}\nSupport wird dir bald helfen.`
+    );
+
+    return message.reply(`✅ Ticket erstellt: ${channel}`);
+  }
+
+  // CLOSE TICKET
+  if (command === "ticket" && args[0] === "close") {
+
+    if (!message.channel.name.startsWith("ticket-")) {
+      return message.reply("❌ Kein Ticket Channel");
+    }
+
+    await message.reply("🗑️ Ticket wird geschlossen...");
+
+    setTimeout(() => {
+      message.channel.delete();
+    }, 3000);
+  }
+
+  // ADD USER
+  if (command === "ticket" && args[0] === "add") {
+
+    const user = message.mentions.users.first();
+
+    if (!user) {
+      return message.reply("❌ User erwähnen");
+    }
+
+    await message.channel.permissionOverwrites.edit(user.id, {
+      ViewChannel: true,
+      SendMessages: true
+    });
+
+    return message.reply(`✅ ${user.tag} hinzugefügt`);
+  }
+
+  // REMOVE USER
+  if (command === "ticket" && args[0] === "remove") {
+
+    const user = message.mentions.users.first();
+
+    if (!user) {
+      return message.reply("❌ User erwähnen");
+    }
+
+    await message.channel.permissionOverwrites.delete(user.id);
+
+    return message.reply(`✅ ${user.tag} entfernt`);
+  }
+});
